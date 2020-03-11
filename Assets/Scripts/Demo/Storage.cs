@@ -1,9 +1,8 @@
-﻿using UnityEngine;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using UnityEngine;
 
-namespace ProtoGOAP.Demo
+namespace Demo
 {
 	public class Storage : MonoBehaviour
 	{
@@ -31,17 +30,17 @@ namespace ProtoGOAP.Demo
 
 		private IDictionary<ResourceType, StackView> stackViews;
 
-		void Start()
+		private void Start()
 		{
-			this.stackViews = new Dictionary<ResourceType, StackView>();
+			stackViews = new Dictionary<ResourceType, StackView>();
 			foreach(var pair in stackViewPairs)
 			{
 				pair.stackView.SingleViewPrefab = town.ResourcePrefabs[pair.resourceType];
-				this.stackViews.Add(pair.resourceType, pair.stackView);
+				stackViews.Add(pair.resourceType, pair.stackView);
 			}
 		}
 
-		void Update()
+		private void Update()
 		{
 			SafeUpdateStack(ResourceType.Logs, logs);
 			SafeUpdateStack(ResourceType.Planks, planks);
@@ -63,9 +62,10 @@ namespace ProtoGOAP.Demo
 			switch(resourceType)
 			{
 			default:
-				throw new ArgumentException(string.Format("unrecognized resource type {0}", resourceType), "resourceType");
+				throw new ArgumentException($"unrecognized resource type {resourceType}", nameof(resourceType));
 			case ResourceType.None:
-				throw new ArgumentException(string.Format("Resource type {0} cannot be used as an argument for GetResourceCount()", resourceType), "resourceType");
+				throw new ArgumentException(
+					$"Resource type {resourceType} cannot be used as an argument for GetResourceCount()", nameof(resourceType));
 			case ResourceType.Logs:
 				return logs;
 			case ResourceType.Planks:
@@ -84,9 +84,10 @@ namespace ProtoGOAP.Demo
 			switch(resourceType)
 			{
 			default:
-				throw new ArgumentException(string.Format("unrecognized resource type {0}", resourceType), "resourceType");
+				throw new ArgumentException($"unrecognized resource type {resourceType}", nameof(resourceType));
 			case ResourceType.None:
-				throw new ArgumentException(string.Format("Resource type {0} cannot be used as an argument for GetResourceCount()", resourceType), "resourceType");
+				throw new ArgumentException(
+					$"Resource type {resourceType} cannot be used as an argument for GetResourceCount()", nameof(resourceType));
 			case ResourceType.Logs:
 				logs = count;
 				break;
@@ -107,17 +108,17 @@ namespace ProtoGOAP.Demo
 
 		public void Clear()
 		{
-			this.logs = 0;
-			this.planks = 0;
-			this.ore = 0;
-			this.iron = 0;
-			this.stone = 0;
+			logs = 0;
+			planks = 0;
+			ore = 0;
+			iron = 0;
+			stone = 0;
 		}
 
 		public int Logs
 		{
 			get {
-				return this.logs;
+				return logs;
 			}
 			set {
 				logs = value;
@@ -127,7 +128,7 @@ namespace ProtoGOAP.Demo
 		public int Planks
 		{
 			get {
-				return this.planks;
+				return planks;
 			}
 			set {
 				planks = value;
@@ -137,7 +138,7 @@ namespace ProtoGOAP.Demo
 		public int Ore
 		{
 			get {
-				return this.ore;
+				return ore;
 			}
 			set {
 				ore = value;
@@ -147,7 +148,7 @@ namespace ProtoGOAP.Demo
 		public int Iron
 		{
 			get {
-				return this.iron;
+				return iron;
 			}
 			set {
 				iron = value;
@@ -157,7 +158,7 @@ namespace ProtoGOAP.Demo
 		public int Stone
 		{
 			get {
-				return this.stone;
+				return stone;
 			}
 			set {
 				stone = value;

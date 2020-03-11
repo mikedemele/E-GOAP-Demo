@@ -27,3 +27,5 @@ sysinfo.txt
 # .fuse_hidden* files
 .fuse_hidden*
 
+Logs/
+Packages/

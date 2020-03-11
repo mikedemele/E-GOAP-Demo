@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ProtoGOAP.Demo
+namespace Demo
 {
 	[Flags]
 	public enum ToolType

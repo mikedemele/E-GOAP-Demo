@@ -1,11 +1,8 @@
-﻿using UnityEngine;
-using System;
+﻿using System;
+using EGoap.Source.Debug;
+using EGoap.Source.Planning;
 
-using Terrapass.Debug;
-
-using Terrapass.GameAi.Goap.Planning;
-
-namespace ProtoGOAP.Demo
+namespace Demo
 {
 	public partial class Townsman
 	{
@@ -26,23 +23,23 @@ namespace ProtoGOAP.Demo
 				if(symbolId.Name[0] == 'M')
 				{
 					return symbolId.Name[1] == 'R'
-						? (int)this.townsman.resourceType
-						: (int)this.townsman.toolType;
+						? (int)townsman.resourceType
+						: (int)townsman.toolType;
 				}
 
 				if(symbolId.Name[0] == 'S')
 				{
-					return this.townsman.town.MainStorage.GetResourceCount((ResourceType)Enum.Parse(typeof(ResourceType), symbolId.Name.Substring(1)));
+					return townsman.town.MainStorage.GetResourceCount((ResourceType)Enum.Parse(typeof(ResourceType), symbolId.Name.Substring(1)));
 				}
 
 				if(symbolId.Name[0] == 'C')
 				{
-					return this.townsman.town.ConstructionStorage.GetResourceCount((ResourceType)Enum.Parse(typeof(ResourceType), symbolId.Name.Substring(1)));
+					return townsman.town.ConstructionStorage.GetResourceCount((ResourceType)Enum.Parse(typeof(ResourceType), symbolId.Name.Substring(1)));
 				}
 
 				if(symbolId.Name[0] == 'B')
 				{
-					return this.townsman.town.ToolBench.GetToolCount((ToolType)Enum.Parse(typeof(ToolType), symbolId.Name.Substring(1)));
+					return townsman.town.ToolBench.GetToolCount((ToolType)Enum.Parse(typeof(ToolType), symbolId.Name.Substring(1)));
 				}
 
 				if(symbolId.Name == "HouseBuilt")
@@ -50,7 +47,7 @@ namespace ProtoGOAP.Demo
 					return townsman.town.House.IsBuilt ? 1 : 0;
 				}
 
-				throw new ArgumentException(string.Format("Unrecognized symbol {0}", symbolId), "symbolId");
+				throw new ArgumentException($"Unrecognized symbol {symbolId}", nameof(symbolId));
 			}
 
 			#endregion

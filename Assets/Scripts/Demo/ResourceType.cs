@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ProtoGOAP.Demo
+﻿namespace Demo
 {
 	public enum ResourceType
 	{

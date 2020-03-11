@@ -1,9 +1,7 @@
-﻿using UnityEngine;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
-namespace ProtoGOAP.Demo
+namespace Demo
 {
 	public class StackView : MonoBehaviour
 	{
@@ -14,35 +12,35 @@ namespace ProtoGOAP.Demo
 		[SerializeField]
 		private int viewsPerRow = 3;
 		[SerializeField]
-		private float horizontalSpacing = 0.0f;
+		private float horizontalSpacing;
 		[SerializeField]
-		private float verticalSpacing = 0.0f;
+		private float verticalSpacing;
 
 		private bool dirtyView = true;
 		private Stack<GameObject> views;
 
-		void Start()
+		private void Start()
 		{
 			views = new Stack<GameObject>();
 		}
 
-		void Update()
+		private void Update()
 		{
 			if(dirtyView && singleViewPrefab != null)
 			{
 				if(count > views.Count)
 				{
 					var newViewsNeeded = count - views.Count;
-					for(int i = 0; i < newViewsNeeded; i++)
+					for(var i = 0; i < newViewsNeeded; i++)
 					{
-						var newView = (GameObject)Instantiate(singleViewPrefab);
-						newView.transform.parent = this.transform;
+						var newView = Instantiate(singleViewPrefab, transform, true);
 						newView.transform.localRotation = Quaternion.identity;
 						var newViewRenderer = newView.GetComponentInChildren<Renderer>();
+						var bounds = newViewRenderer.bounds;
 						newView.transform.localPosition 
-							= ((views.Count + 1) % viewsPerRow) * (newViewRenderer.bounds.size.x + horizontalSpacing)* Vector3.right
+							= ((views.Count + 1) % viewsPerRow) * (bounds.size.x + horizontalSpacing)* Vector3.right
 								+
-							((views.Count + 1) / viewsPerRow) * (newViewRenderer.bounds.size.y + verticalSpacing) * Vector3.up;
+							((float)(views.Count + 1) / viewsPerRow) * (bounds.size.y + verticalSpacing) * Vector3.up;
 
 						views.Push(newView);
 
@@ -51,7 +49,7 @@ namespace ProtoGOAP.Demo
 				else
 				{
 					var extraViews = views.Count - count;
-					for(int i = 0; i < extraViews; i++)
+					for(var i = 0; i < extraViews; i++)
 					{
 						Destroy(views.Pop());
 					}
@@ -62,9 +60,7 @@ namespace ProtoGOAP.Demo
 
 		public GameObject SingleViewPrefab
 		{
-			get {
-				return this.singleViewPrefab;
-			}
+			get => singleViewPrefab;
 			set {
 				singleViewPrefab = value;
 				dirtyView = true;
@@ -74,9 +70,7 @@ namespace ProtoGOAP.Demo
 
 		public int Count
 		{
-			get {
-				return this.count;
-			}
+			get => count;
 			set {
 				count = value;
 				dirtyView = true;
@@ -85,9 +79,7 @@ namespace ProtoGOAP.Demo
 
 		public int ViewsPerRow
 		{
-			get {
-				return this.viewsPerRow;
-			}
+			get => viewsPerRow;
 			set {
 				viewsPerRow = value;
 				dirtyView = true;

@@ -1,28 +1,22 @@
-﻿using UnityEngine;
-using UnityEngine.AI;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using Demo.UI;
+using EGoap.Source.Agents;
+using EGoap.Source.Debug;
+using EGoap.Source.Extensions.Unity;
+using EGoap.Source.Planning;
+using EGoap.Source.Planning.Preconditions;
+using EGoap.Source.Utils.Time;
+using UnityEngine;
+using UnityEngine.AI;
 
-using Terrapass.Extensions.Unity;
-using Terrapass.Time;
-
-using Terrapass.GameAi.Goap.Agents;
-using Terrapass.GameAi.Goap.Planning;
-using Terrapass.GameAi.Goap.Planning.Preconditions;
-using Terrapass.Debug;
-
-namespace ProtoGOAP.Demo
+namespace Demo
 {
-	using UI;
-
-	// TODO: Encapsulate view logic in a separate TownsmanView class
 	public partial class Townsman : MonoBehaviour
 	{
-		private const float TOOL_ANIMATION_PERIOD = 0.5f;
-		private const float TOOL_ANIMATION_TO_IDLE_LERP = 0.25f;
-		private const float IDLE_TOOL_ANGLE = 75f;
-		private const float MAX_TOOL_ANGLE = 190f;
+		private const float ToolAnimationPeriod = 0.5f;
+		private const float IdleToolAngle = 75f;
+		private const float MaxToolAngle = 190f;
 
 		[SerializeField]
 		private PlanExecutionStatePanel planExecutionStatePanel;
@@ -39,8 +33,14 @@ namespace ProtoGOAP.Demo
 		[SerializeField]
 		private ResourceType resourceType;
 
-		private Agent agent;
+		[SerializeField]
+		private bool learn;
 
+		[SerializeField]
+		private double experienceWeight;
+
+		private Agent agent;
+		
 		private NavMeshAgent navMeshAgent;
 
 		private IDictionary<ToolType, GameObject> toolViews;
@@ -50,13 +50,11 @@ namespace ProtoGOAP.Demo
 		private GameObject currentResourceView;
 
 		private bool dirtyView = true;
-		private bool animateTool = false;
-		//private float currentToolAngle = IDLE_TOOL_ANGLE;
-		//private float targetToolAngle;
+		private bool animateTool;
 
 		private IResettableTimer toolAnimationTimer;
 
-		void Start()
+		private void Start()
 		{
 			this.EnsureRequiredFieldsAreSetInEditor();
 
@@ -65,21 +63,40 @@ namespace ProtoGOAP.Demo
 			var goalSelector = new GoalSelector.Builder()
 				.WithReevaluationPeriod(3.0f)
 				.WithGoal(
-					new Goal(
-						"BuildHouse",
-						new List<IPrecondition>() {
+					new Goal("BuildHouse",
+						new List<IPrecondition>
+						{
+							new IsTrue(new SymbolId("HouseBuilt"))
+						}
+					),
+					() => town.House.IsBuilt ? -1 : 1
+				)
+				.WithGoal(
+					new Goal("DestroyHouse",
+						new List<IPrecondition>
+						{
+							new IsTrue(new SymbolId("HouseBuilt"))
+						}
+					),
+					() => town.House.IsBuilt ? 1 : -1
+				)
+				.WithGoal(
+					new Goal("BuildHouse",
+						new List<IPrecondition>
+						{
 							new IsTrue(new SymbolId("HouseBuilt"))
 						}
 					),
 					() => town.House.IsBuilt ? -1 : 1
 				)
 				.Build();
-			var actionFactory = this.GetActionFactory();
-			var planner = new RegressivePlanner(20, 5);
+			var actionFactory = GetActionFactory();
+
+			var planner = new ForwardPlanner(100, 200, learn, experienceWeight);
 			var planExecutor = new PlanExecutor(actionFactory);
 
-			this.agent = new Agent(
-				new AgentEnvironment.Builder()
+			agent = new Agent(
+				new AgentConfiguration.Builder()
 				.WithKnowledgeProvider(knowledgeProvider)
 				.WithGoalSelector(goalSelector)
 				.WithPlanner(planner)
@@ -87,20 +104,20 @@ namespace ProtoGOAP.Demo
 				.Build()
 			);
 
-			this.navMeshAgent = this.GetComponent<NavMeshAgent>();
-			DebugUtils.Assert(this.navMeshAgent != null, "{0} requires {1} to be present", this.GetType(), typeof(NavMeshAgent));
+			navMeshAgent = GetComponent<NavMeshAgent>();
+			DebugUtils.Assert(navMeshAgent != null, "{0} requires {1} to be present", GetType(), typeof(NavMeshAgent));
 
 			// Init view
-			this.toolAnimationTimer = new ResettableExecutionTimer(true);
+			toolAnimationTimer = new ResettableStopwatchExecutionTimer(true);
 
 			// Init UI
-			this.planExecutionStatePanel.PlanExecution = planExecutor.CurrentExecution;
+			planExecutionStatePanel.PlanExecution = planExecutor.CurrentExecution;
 		}
 
-		void Update()
+		private void Update()
 		{
 			// Update AI
-			this.agent.Update();
+			agent.Update();
 
 			// Init view (if needed)
 			if(toolViews == null)
@@ -108,7 +125,7 @@ namespace ProtoGOAP.Demo
 				toolViews = new Dictionary<ToolType, GameObject>();
 				foreach(var kvp in town.ToolPrefabs)
 				{
-					var view = (GameObject)Instantiate(kvp.Value, toolTransform.position, toolTransform.rotation);
+					var view = Instantiate(kvp.Value, toolTransform.position, toolTransform.rotation);
 					view.transform.parent = toolTransform;
 					toolViews.Add(
 						kvp.Key,
@@ -122,7 +139,7 @@ namespace ProtoGOAP.Demo
 				resourceViews = new Dictionary<ResourceType, GameObject>();
 				foreach(var kvp in town.ResourcePrefabs)
 				{
-					var view = (GameObject)Instantiate(kvp.Value, resourceTransform.position, resourceTransform.rotation);
+					var view = Instantiate(kvp.Value, resourceTransform.position, resourceTransform.rotation);
 					view.transform.parent = resourceTransform;
 					resourceViews.Add(
 						kvp.Key,
@@ -147,21 +164,21 @@ namespace ProtoGOAP.Demo
 			}
 
 			var animSeconds = toolAnimationTimer.ElapsedSeconds;
-			float animSecondsRemainder = (float)(animSeconds - Math.Floor(animSeconds / (TOOL_ANIMATION_PERIOD))*TOOL_ANIMATION_PERIOD);
+			var animSecondsRemainder = (float)(animSeconds - Math.Floor(animSeconds / (ToolAnimationPeriod))*ToolAnimationPeriod);
 			var currentToolAngle = Mathf.Lerp(
-				IDLE_TOOL_ANGLE,
-				MAX_TOOL_ANGLE, 
-				1 - Math.Abs(2*(animSecondsRemainder / TOOL_ANIMATION_PERIOD) - 1)
+				IdleToolAngle,
+				MaxToolAngle, 
+				1 - Math.Abs(2*(animSecondsRemainder / ToolAnimationPeriod) - 1)
 			);
 			toolTransform.localRotation = Quaternion.Euler(currentToolAngle, 0, -90);
 		}
 
-		private void SetVisible(GameObject gameObject, bool visible)
+		private static void SetVisible(GameObject gameObject, bool visible)
 		{
 			var renderers = gameObject.GetComponentsInChildren<Renderer>();
-			foreach(var renderer in renderers)
+			foreach(var currentRenderer in renderers)
 			{
-				renderer.enabled = visible;
+				currentRenderer.enabled = visible;
 			}
 		}
 
@@ -172,54 +189,41 @@ namespace ProtoGOAP.Demo
 
 		private void MoveTo(Vector3 position)
 		{
-			//this.navMeshAgent.ResetPath();
-			this.navMeshAgent.destination = position;
+			navMeshAgent.destination = position;
 		}
 
-		private bool ReachedDestination
-		{
-			get {
-				return !this.navMeshAgent.pathPending && this.navMeshAgent.remainingDistance < 0.0001f;
-			}
-		}
+		private bool ReachedDestination => !navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.0001f;
 
-		public ToolType CurrentTool
+		private ToolType CurrentTool
 		{
-			get {
-				return toolType;
-			}
+			get => toolType;
 			set {
 				toolType = value;
 				dirtyView = true;
 			}
 		}
 
-		public ResourceType CurrentResource
+		private ResourceType CurrentResource
 		{
-			get {
-				return resourceType;
-			}
+			get => resourceType;
 			set {
 				resourceType = value;
 				dirtyView = true;
 			}
 		}
 
-		public bool AnimateTool
+		private bool AnimateTool
 		{
-			get {
-				return this.animateTool;
-			}
 			set {
-				if(!this.animateTool && value)
+				if(!animateTool && value)
 				{
-					this.toolAnimationTimer.Reset(false);
+					toolAnimationTimer.Reset(false);
 				}
-				else if(this.animateTool && !value)
+				else if(animateTool && !value)
 				{
-					this.toolAnimationTimer.Reset(true);
+					toolAnimationTimer.Reset();
 				}
-				this.animateTool = value;
+				animateTool = value;
 			}
 		}
 	}

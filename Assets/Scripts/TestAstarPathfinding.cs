@@ -1,70 +1,56 @@
 ﻿using System;
 using System.Linq;
-using System.Collections;
 using System.Collections.Generic;
+
+using EGoap.Source.Graphs;
+using EGoap.Source.Planning;
+using EGoap.Source.Utils.Time;
 using UnityEngine;
 
-using Terrapass.Time;
-
-using Terrapass.GameAi.Goap.Graphs;
-
-public class TestAstarPathfinding : MonoBehaviour
+// Test case for the base A* pathfinder
+public class TestAStarPathfinding : MonoBehaviour
 {
 	private class Node : IGraphNode<Node>
 	{
-		private string name;
-		private IList<IGraphEdge<Node>> outgoingEdges;
+		private readonly IList<IGraphEdge<Node>> outgoingEdges;
 
-		public Node(string name)
+		public Node(string nodeName)
 		{
-			this.name = name;
-			this.outgoingEdges = new List<IGraphEdge<Node>>();
+			Name = nodeName;
+			outgoingEdges = new List<IGraphEdge<Node>>();
 		}
 
 		#region IGraphNode implementation
 
-		public IEnumerable<IGraphEdge<Node>> OutgoingEdges
-		{
-			get {
-				return this.outgoingEdges;
-			}
-		}
+		public IEnumerable<IGraphEdge<Node>> OutgoingEdges => outgoingEdges;
 
 		#endregion
 
 		public override string ToString()
 		{
-			return this.name;
+			return Name;
 		}
 
 		public void AddOutgoingEdge(IGraphEdge<Node> outgoingEdge)
 		{
 			if(!outgoingEdge.SourceNode.Equals(this))
 			{
-				throw new ArgumentException("outgoingEdge must have this Node as its source", "outgoingEdge");
+				throw new ArgumentException("outgoingEdge must have this Node as its source", nameof(outgoingEdge));
 			}
-			this.outgoingEdges.Add(outgoingEdge);
+			outgoingEdges.Add(outgoingEdge);
 		}
 
 		public override bool Equals(object obj)
 		{
-			Node otherNode = obj as Node;
-			return otherNode != null
-				? this.name.Equals(otherNode.name)
-				: false;
+			return obj is Node otherNode && Name.Equals(otherNode.Name);
 		}
 
 		public override int GetHashCode()
 		{
-			return this.name.GetHashCode();
+			return Name.GetHashCode();
 		}
 
-		public string Name
-		{
-			get {
-				return this.name;
-			}
-		}
+		public string Name { get; }
 	}
 
 	private class Edge : IGraphEdge<Node>
@@ -72,6 +58,11 @@ public class TestAstarPathfinding : MonoBehaviour
 		#region IGraphEdge implementation
 
 		public double Cost {get;}
+
+		public PlanningAction GetAction()
+		{
+			throw new NotImplementedException();
+		}
 
 		public Node SourceNode {get;}
 
@@ -81,14 +72,14 @@ public class TestAstarPathfinding : MonoBehaviour
 
 		public Edge(Node sourceNode, Node targetNode, double cost)
 		{
-			this.SourceNode = sourceNode;
-			this.TargetNode = targetNode;
-			this.Cost = cost;
+			SourceNode = sourceNode;
+			TargetNode = targetNode;
+			Cost = cost;
 		}
 
 		public override string ToString()
 		{
-			return string.Format("[Edge: Cost={0}, SourceNode={1}, TargetNode={2}]", Cost, SourceNode, TargetNode);
+			return $"[Edge: Cost={Cost}, SourceNode={SourceNode}, TargetNode={TargetNode}]";
 		}
 	}
 
@@ -97,17 +88,14 @@ public class TestAstarPathfinding : MonoBehaviour
 		if(!targetNode.Name.Equals("F"))
 		{
 			throw new NotImplementedException(
-				string.Format(
-					"Heuristic is not implemented for any target node, except for F (got {0})",
-					targetNode.Name
-				)
+				$"Heuristic is not implemented for any target node, except for F (got {targetNode.Name})"
 			);
 		}
 
 		switch(sourceNode.Name)
 		{
 		default:
-			throw new ArgumentException(string.Format("Unknown source node {0}", sourceNode.Name), "sourceNode");
+			throw new ArgumentException($"Unknown source node {sourceNode.Name}", nameof(sourceNode));
 		case "A":
 			return 4;
 		case "B":
@@ -124,14 +112,14 @@ public class TestAstarPathfinding : MonoBehaviour
 	}
 
 	// Use this for initialization
-	void Start()
+	private void Start()
 	{
-		Node a = new Node("A");
-		Node b = new Node("B");
-		Node c = new Node("C");
-		Node d = new Node("D");
-		Node e = new Node("E");
-		Node f = new Node("F");
+		var a = new Node("A");
+		var b = new Node("B");
+		var c = new Node("C");
+		var d = new Node("D");
+		var e = new Node("E");
+		var f = new Node("F");
 
 		a.AddOutgoingEdge(new Edge(a, b, 4));
 		a.AddOutgoingEdge(new Edge(a, c, 2));
@@ -142,16 +130,10 @@ public class TestAstarPathfinding : MonoBehaviour
 		e.AddOutgoingEdge(new Edge(e, d, 4));
 		d.AddOutgoingEdge(new Edge(d, f, 11));
 
-		var pathfinder = new AstarPathfinder<Node>(Heuristic);
-		var timer = new SystemExecutionTimer();
+		var pathfinder = new AStarPathfinder<Node>(Heuristic);
+		var timer = new StopwatchExecutionTimer();
 		var path = pathfinder.FindPath(a, f);
 		print(string.Format("In {1} seconds found the following path with cost {0} from A to F:", path.Cost, timer.ElapsedSeconds));
-		print(path.Edges.Aggregate("", (soFar, edge) => soFar + (soFar.Length > 0 ? " -> " : "") + edge.ToString()));
-	}
-	
-	// Update is called once per frame
-	void Update()
-	{
-		
+		print(path.Edges.Aggregate("", (soFar, edge) => soFar + (soFar.Length > 0 ? " -> " : "") + edge));
 	}
 }

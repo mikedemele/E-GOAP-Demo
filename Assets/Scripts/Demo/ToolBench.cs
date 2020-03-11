@@ -1,9 +1,8 @@
-﻿using UnityEngine;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using UnityEngine;
 
-namespace ProtoGOAP.Demo
+namespace Demo
 {
 	public class ToolBench : MonoBehaviour
 	{
@@ -30,17 +29,17 @@ namespace ProtoGOAP.Demo
 
 		private IDictionary<ToolType, StackView> stackViews;
 
-		void Start()
+		private void Start()
 		{
-			this.stackViews = new Dictionary<ToolType, StackView>();
+			stackViews = new Dictionary<ToolType, StackView>();
 			foreach(var pair in stackViewPairs)
 			{
 				pair.stackView.SingleViewPrefab = town.ToolPrefabs[pair.toolType];
-				this.stackViews.Add(pair.toolType, pair.stackView);
+				stackViews.Add(pair.toolType, pair.stackView);
 			}
 		}
 
-		void Update()
+		private void Update()
 		{
 			SafeUpdateStack(ToolType.Axe, axes);
 			SafeUpdateStack(ToolType.Pickaxe, pickaxes);
@@ -61,9 +60,10 @@ namespace ProtoGOAP.Demo
 			switch(toolType)
 			{
 			default:
-				throw new ArgumentException(string.Format("unrecognized resource type {0}", toolType), "resourceType");
+				throw new ArgumentException($"unrecognized resource type {toolType}", nameof(toolType));
 			case ToolType.None:
-				throw new ArgumentException(string.Format("Resource type {0} cannot be used as an argument for GetResourceCount()", toolType), "resourceType");
+				throw new ArgumentException(
+					$"Resource type {toolType} cannot be used as an argument for GetResourceCount()", nameof(toolType));
 			case ToolType.Axe:
 				return axes;
 			case ToolType.Pickaxe:
@@ -80,9 +80,10 @@ namespace ProtoGOAP.Demo
 			switch(toolType)
 			{
 			default:
-				throw new ArgumentException(string.Format("unrecognized resource type {0}", toolType), "resourceType");
+				throw new ArgumentException($"unrecognized resource type {toolType}", nameof(toolType));
 			case ToolType.None:
-				throw new ArgumentException(string.Format("Resource type {0} cannot be used as an argument for GetResourceCount()", toolType), "resourceType");
+				throw new ArgumentException(
+					$"Resource type {toolType} cannot be used as an argument for GetResourceCount()", nameof(toolType));
 			case ToolType.Axe:
 				axes = count;
 				break;
@@ -100,50 +101,34 @@ namespace ProtoGOAP.Demo
 
 		public void Clear()
 		{
-			this.axes = 0;
-			this.pickaxes = 0;
-			this.hammers = 0;
-			this.saws = 0;
+			axes = 0;
+			pickaxes = 0;
+			hammers = 0;
+			saws = 0;
 		}
 
 		public int Axes
 		{
-			get {
-				return this.axes;
-			}
-			set {
-				axes = value;
-			}
+			get => axes;
+			set => axes = value;
 		}
 
 		public int Pickaxes
 		{
-			get {
-				return this.pickaxes;
-			}
-			set {
-				pickaxes = value;
-			}
+			get => pickaxes;
+			set => pickaxes = value;
 		}
 
 		public int Hammers
 		{
-			get {
-				return this.hammers;
-			}
-			set {
-				hammers = value;
-			}
+			get => hammers;
+			set => hammers = value;
 		}
 
 		public int Saws
 		{
-			get {
-				return this.saws;
-			}
-			set {
-				saws = value;
-			}
+			get => saws;
+			set => saws = value;
 		}
 	}
 }
