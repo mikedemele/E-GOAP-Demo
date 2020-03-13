@@ -1,10 +1,10 @@
 ﻿using System.Linq;
+
 using UnityEngine;
 
 //Run Tests repeatedly to measure performance
 public class Benchmark : MonoBehaviour
 {
-
     //Number of test repetitions
     public int repetitions;
     public double[] weights;
@@ -37,6 +37,7 @@ public class Benchmark : MonoBehaviour
         }
     }
 
+    //Repeats a test case as specified by repetitions 
     private void RunRepetitions(Test test)
     {
         for (var i = 0; i < repetitions; ++i)
